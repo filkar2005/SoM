@@ -40,17 +40,45 @@ class MovablePivot(Node): # подвижность указывается в л�
 
 class Beam:
     '''Класс стержня стержневой системы'''
-    def __init__(self, node_start: Node, node_end: Node):
+    def __init__(self, node_start: Node, node_end: Node, parents):
         self.forces = np.array([0, 0, 0])
         self.forces_types = [None, None, None]
         self.length = np.linalg.norm(node_start.coord - node_end.coord)
         self.node_start = node_start
         self.node_end = node_end
-        self.basis = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        self.parents = parents
+        self.basis_x = np.array([1, 0, 0])
+        self.basis_y = np.array([0, 1, 0])
+        self.basis_z = np.array([0, 0, 1])
+        self.moment_diagram_eqs = [0, 0, 0] # уравнения для построения эпюр
     
     def add_force(self, fx: float, fy: float, fz: float, force_type=['rect', 'rect', 'rect']):
         self.forces += np.array([fx, fy, fz])
         self.forces_types = force_type
+    
+    def section_method_moments(self):
+        #функция для метода сечений
+        #все действия выполняются на основе проекций векторов сил и моментов в глобальных координатах
+        
+        forces_beam = (self.forces*self.length, (self.node_end-self.node_start)*0.5 + self.node_start)
+        forces_node = (self.node_start.forces, self.node_start.coord)
+        moments = (self.node_start.moments, self.node_start.coord)
+        
+        forces_global, moments_global = [], []
+        
+        if self.parents == None:
+            forces_global, moments_global = [forces_beam, forces_node], [moments]
+        else:
+            for i in self.parents:
+                 f_g, m_g = i.section_method_moments()
+                 forces_global.extend(f_g)
+                 moments_global.extend(m_g)
+        
+        # здесь типа код для метода сечений этого стержня, 
+        #...
+        # на выходе - изменения в self.moments_diagram_eqs
+        
+        return forces_global, moments_global
         
 
 class BeamSystem:
