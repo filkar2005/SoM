@@ -75,26 +75,34 @@ class Beam:
         
         forces_global, moments_global = [], []
         
+        
+        #print("Выполняется перебор соседов для стержня {}-{}".format(active_node.name, parent_node.name))
+        #input("Нажмите enter")
+        
+        self.moment_diagram_eqs = [0, 0, 0]
+        
         if active_node.parents == [self]:
             forces_global, moments_global = [forces_beam, forces_node], [moments]
         else:
             for i in active_node.parents:
+                #print("Анализируется балка {}-{}".format(i.node_start.name, i.node_end.name))
                 if i == self or i.moment_diagram_eqs != None:
-                    continue # moments_diagram_eqs != None означает, что эта балка обсчитывалась ранее
-                    # требуется нормально посчитать, возможно ли это в теории
+                    #print("Это и есть активная или уже обсчитывалась")
+                    continue 
                 else:
+                    #print("Балка ранее не встречалась, вход в рекурсию")
                     f_g, m_g = i.section_method_moments(active_node)
+                    #print("Рекурсия для балки {}-{} закончена".format(i.node_start.name, i.node_end.name))
                     forces_global.extend(f_g)
                     moments_global.extend(m_g)
         
-        self.moment_diagram_eqs = [0, 0, 0]
+        print("Балка {}-{} проанализирована, получены силы".format(active_node.name, parent_node.name))
         # здесь типа код для метода сечений этого стержня, 
         #...
         # на выходе - изменения в self.moments_diagram_eqs
-        print("Произошел пересчет балки {}-{}".format(active_node.name, parent_node.name))
+        #print("Произошел пересчет балки {}-{}".format(active_node.name, parent_node.name))
         
         return forces_global, moments_global
-        Node(0, 0, 0, "0")
 
 class BeamSystem:
     '''Класс стержневой системы, какая-то дичь, по хорошему надо бы нормально придумать хранение элементов'''
@@ -116,5 +124,6 @@ if __name__ == "__main__":
     b2 = Beam(a2, a3)
     b3 = Beam(a3, a4)
     b4 = Beam(a2, a5)
+    b5 = Beam(a3, a5)
     
     b1.section_method_moments(a1)
