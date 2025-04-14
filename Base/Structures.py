@@ -8,7 +8,7 @@ Created on Thu Mar 27 17:18:35 2025
 
 import numpy as np
 import sympy
-from sympy.abc import x
+from sympy.abc import X
 
 class Node:
     '''Класс узла стержневой системы, силы и моменты содержатся по осям в массивах'''
@@ -52,10 +52,43 @@ class Beam:
         self.node_start.parents.append(self)
         self.node_end.parents.append(self)
         
-        self.basis_x = np.array([1, 0, 0])
-        self.basis_y = np.array([0, 1, 0])
-        self.basis_z = np.array([0, 0, 1])
+        self.basis = np.array([
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1]
+            ])
+        self._init_basis()
+        print("new basis", self.basis)
+        
         self.moment_diagram_eqs = None # уравнения для построения эпюр
+        
+    
+    def _init_basis(self):
+        parent = None
+        for i in self.node_start.parents:
+            if i==self:
+                continue
+            else:
+                parent = i
+                break
+        if parent == None:
+            return None
+        
+        # вектора балок родителя и актиной балки
+        vec1 = parent.node_end.coord - parent.node_start.coord
+        vec2 = self.node_end.coord - self.node_start.coord
+        
+        phi = np.arccos(vec1.dot(vec2)) # угол поворота вокруг оси
+        cos = np.cos(phi)
+        sin = np.sin(phi)
+        x, y, z = np.cross(vec1, vec2) # ось поворота
+        rotate_matrix = np.around(np.array([
+            [x*x*(1-cos)+cos, x*y*(1-cos)-z*sin, x*z*(1-cos)+y*sin],
+            [x*y*(1-cos)+z*sin, y*y*(1-cos)+cos, y*z*(1-cos)-x*sin],
+            [x*z*(1-cos)-y*sin, y*z*(1-cos)+x*sin, z*z*(1-cos)+cos]
+            ]), decimals=10) # точность базиса
+        
+        self.basis = np.dot(self.basis, rotate_matrix)
     
     def add_force(self, fx: float, fy: float, fz: float, force_type=['rect', 'rect', 'rect']):
         self.forces += np.array([fx, fy, fz])
@@ -114,16 +147,15 @@ class BeamSystem:
 
 if __name__ == "__main__":
     print("ку")
-    a1 = Node(0, 0, 0, "0")
-    a2 = Node(0, 0, 0, "1")
-    a3 = Node(0, 0, 0, "2")
-    a4 = Node(0, 0, 0, "3")
-    a5 = Node(0, 0, 0, "4")
+    a0 = Node(-1, 0, 0, "0")
+    a1 = Node(0, 0, 0, "1")
+    a2 = Node(0, -1, 0, "2")
+    a3 = Node(1, 0, 0, "3")
+    a4 = Node(0, 0, -1, "4")
     
-    b1 = Beam(a1, a2)
-    b2 = Beam(a2, a3)
-    b3 = Beam(a3, a4)
-    b4 = Beam(a2, a5)
-    b5 = Beam(a3, a5)
+    b1 = Beam(a0, a1)
+    b2 = Beam(a1, a2)
+    b3 = Beam(a1, a3)
+    b4 = Beam(a1, a4)
     
     b1.section_method_moments(a1)
